@@ -909,7 +909,7 @@ function AchievementCard() {
       {/* Card: revela com a mesma fumaça sublime da dobra 1, só quando o scroll chega na seção */}
       <motion.div
         ref={cardRef}
-        initial={{ opacity: 0, y: 44, scale: 1.03, filter: "blur(18px)" }}
+        initial={{ opacity: 0, y: 44, scale: 1.02, filter: "blur(8px)" }}
         animate={inView ? { opacity: 1, y: 0, scale: 1, filter: "blur(0px)" } : {}}
         transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
         className="relative z-10 w-[min(94vw,460px)] h-[700px] bg-black/30 rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.8),inset_0_1px_2px_rgba(255,255,255,0.2)] border border-white/10 overflow-hidden flex flex-col items-center backdrop-blur-3xl">
@@ -920,7 +920,7 @@ function AchievementCard() {
         {}
         <div className="absolute top-8 z-20 flex items-center justify-center w-full">
           <motion.h2
-            initial={{ opacity: 0, filter: "blur(15px)", y: 15 }}
+            initial={{ opacity: 0, filter: "blur(8px)", y: 15 }}
             animate={inView ? { opacity: 1, filter: "blur(0px)", y: 0 } : {}}
             transition={{ duration: 1.3, ease: "easeOut", delay: 0.35 }}
             className="text-transparent bg-clip-text bg-gradient-to-r from-red-100 via-rose-200 to-red-400 text-[1.3rem] font-extrabold tracking-[0.3em] uppercase drop-shadow-[0_0_15px_rgba(244,63,94,0.4)]"
@@ -941,20 +941,20 @@ function AchievementCard() {
                 className={`absolute w-full flex ${fromLeft ? "justify-start" : "justify-end"} z-10`}
                 style={{ top: item.top }}
               >
-                {/* aba grudada na borda: entra do próprio lado com fade esfumaçado e fica */}
+                {/* aba grudada na borda: entra do próprio lado deslizando (só transform+opacity: liso na GPU) */}
                 <motion.div
-                  initial={{ x: fromLeft ? -100 : 100, opacity: 0, filter: "blur(10px)" }}
-                  animate={inView ? { x: 0, opacity: 1, filter: "blur(0px)" } : {}}
+                  initial={{ x: fromLeft ? -110 : 110, opacity: 0, scale: 0.96 }}
+                  animate={inView ? { x: 0, opacity: 1, scale: 1 } : {}}
                   transition={{
                     duration: 1.1,
                     ease: [0.22, 1, 0.36, 1],
                     // começam logo após o título aparecer, em cascata
                     delay: 1.4 + i * 0.3
                   }}
+                  style={{ willChange: "transform, opacity" }}
                   className={`flex items-center gap-4 px-6 py-2.5 whitespace-nowrap
                              ${fromLeft ? "rounded-r-full border-l-0 pl-5" : "rounded-l-full border-r-0 pr-5"}
-                             bg-gradient-to-br from-white/20 via-black/40 to-black/60
-                             backdrop-blur-xl saturate-[1.8]
+                             bg-gradient-to-br from-white/20 via-black/55 to-black/70
                              border border-white/20 border-t-white/50
                              shadow-[0_15px_35px_rgba(0,0,0,0.6),inset_0_3px_5px_rgba(255,255,255,0.6),inset_0_-2px_4px_rgba(0,0,0,0.4)]`}
                 >
