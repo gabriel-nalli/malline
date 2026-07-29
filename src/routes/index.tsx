@@ -30,8 +30,17 @@ export const Route = createFileRoute("/")({
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "" },
       {
+        // só o que a página usa: Playfair 400/700 (+itálicos) e Jost — Inter saiu
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;0,900;1,600;1,700&family=Jost:wght@400;500;600&family=Inter:wght@400;500;600&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Jost:wght@400;500;600&display=swap",
+      },
+      {
+        // LCP: antecipa a arte da hero em paralelo ao CSS
+        rel: "preload",
+        as: "image",
+        imageSrcSet: "/img/hero-malinne-v2-sm.webp 640w, /img/hero-malinne-v2.webp 941w",
+        imageSizes: "(min-width: 900px) 520px, 100vw",
+        fetchPriority: "high",
       },
     ],
   }),
@@ -190,6 +199,21 @@ function Tilt({ children, className = "" }: { children: React.ReactNode; classNa
     </motion.div>
   );
 }
+
+/* ============ PERF: no mobile os fundos líquidos ficam estáticos ============ */
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 899px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  return isMobile;
+}
+
+const DRIFT_VP = { once: false, margin: "250px 0px 250px 0px" } as const;
 
 /* ============ ANIM GATE (perf): pausa as animações CSS da seção quando fora da tela ============ */
 function AnimGate({ children }: { children: React.ReactNode }) {
@@ -858,6 +882,7 @@ function AchievementCard() {
   const cardRef = useRef<HTMLDivElement>(null);
   // sequência do reveal: card → título (fade longo) → pílulas começam a cruzar
   const inView = useInView(cardRef, { once: true, amount: 0.35 });
+  const isMobile = useIsMobile();
   return (
     // Fundo com a identidade visual da página (mesmo radial vinho/rubi das outras seções)
     <div
@@ -868,19 +893,15 @@ function AchievementCard() {
       }}
     >
 
-      {/* Background Liquid (brilhos rubi em movimento lento, sem imagem) */}
+      {/* Background Liquid (brilhos rubi em movimento lento, sem imagem; estático no mobile) */}
       <motion.div
-        whileInView={{
-          scale: [1, 1.12, 1],
-          x: [-30, 30, -30],
-          y: [-15, 15, -15],
-        }}
-        viewport={{ once: false, margin: "250px 0px 250px 0px" }}
-        transition={{
-          duration: 20,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
+        {...(isMobile
+          ? {}
+          : {
+              whileInView: { scale: [1, 1.12, 1], x: [-30, 30, -30], y: [-15, 15, -15] },
+              viewport: DRIFT_VP,
+              transition: { duration: 20, repeat: Infinity, ease: "easeInOut" },
+            })}
         className="absolute inset-0 z-0"
         style={{
           background:
@@ -895,9 +916,13 @@ function AchievementCard() {
         style={{ background: "linear-gradient(180deg, #060101 0%, rgba(6,1,1,.6) 48%, transparent 100%)" }}
       />
       <motion.div
-        whileInView={{ x: ["-12%", "12%", "-12%"], opacity: [0.45, 0.85, 0.45] }}
-        viewport={{ once: false, margin: "250px 0px 250px 0px" }}
-        transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
+        {...(isMobile
+          ? {}
+          : {
+              whileInView: { x: ["-12%", "12%", "-12%"], opacity: [0.45, 0.85, 0.45] },
+              viewport: DRIFT_VP,
+              transition: { duration: 14, repeat: Infinity, ease: "easeInOut" },
+            })}
         className="absolute -top-8 left-[-15%] right-[-15%] h-64 z-[6] pointer-events-none"
         style={{
           background:
@@ -912,7 +937,7 @@ function AchievementCard() {
         initial={{ opacity: 0, y: 44, scale: 1.02, filter: "blur(8px)" }}
         animate={inView ? { opacity: 1, y: 0, scale: 1, filter: "blur(0px)" } : {}}
         transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
-        className="relative z-10 w-[min(94vw,460px)] h-[700px] bg-black/30 rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.8),inset_0_1px_2px_rgba(255,255,255,0.2)] border border-white/10 overflow-hidden flex flex-col items-center backdrop-blur-3xl">
+        className="no-bf-mobile relative z-10 w-[min(94vw,460px)] h-[700px] bg-black/30 rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.8),inset_0_1px_2px_rgba(255,255,255,0.2)] border border-white/10 overflow-hidden flex flex-col items-center backdrop-blur-3xl">
 
         {/* Luz interna extra no card para dar mais volume de vidro */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-[30%] bg-red-500/20 rounded-full blur-[50px] mix-blend-overlay pointer-events-none"></div>
@@ -1298,6 +1323,7 @@ function PainSection() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const sectionRef = useRef<HTMLDivElement>(null);
   const sectionInView = useInView(sectionRef, { once: true, amount: 0.3 });
+  const isMobile = useIsMobile();
 
   // Auto-play do carrossel — só começa quando a seção entra na tela
   useEffect(() => {
@@ -1318,9 +1344,13 @@ function PainSection() {
 
       {/* Background Liquid Glass: bolhas rubi fortes derivando lentamente */}
       <motion.div
-        whileInView={{ x: [-40, 30, -40], y: [-20, 25, -20], scale: [1, 1.15, 1] }}
-        viewport={{ once: false, margin: "250px 0px 250px 0px" }}
-        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+        {...(isMobile
+          ? {}
+          : {
+              whileInView: { x: [-40, 30, -40], y: [-20, 25, -20], scale: [1, 1.15, 1] },
+              viewport: DRIFT_VP,
+              transition: { duration: 18, repeat: Infinity, ease: "easeInOut" },
+            })}
         className="absolute -top-[8%] -left-[18%] w-[90vw] h-[90vw] max-w-[640px] max-h-[640px] rounded-full z-0 pointer-events-none"
         style={{
           background: "radial-gradient(circle at 35% 35%, rgba(194,26,34,.52), rgba(110,23,18,.28) 55%, transparent 76%)",
@@ -1328,9 +1358,13 @@ function PainSection() {
         }}
       />
       <motion.div
-        whileInView={{ x: [30, -30, 30], y: [20, -20, 20], scale: [1.1, 1, 1.1] }}
-        viewport={{ once: false, margin: "250px 0px 250px 0px" }}
-        transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
+        {...(isMobile
+          ? {}
+          : {
+              whileInView: { x: [30, -30, 30], y: [20, -20, 20], scale: [1.1, 1, 1.1] },
+              viewport: DRIFT_VP,
+              transition: { duration: 22, repeat: Infinity, ease: "easeInOut" },
+            })}
         className="absolute bottom-[-6%] right-[-16%] w-[80vw] h-[80vw] max-w-[580px] max-h-[580px] rounded-full z-0 pointer-events-none"
         style={{
           background: "radial-gradient(circle at 60% 40%, rgba(142,27,21,.55), rgba(75,16,13,.3) 55%, transparent 78%)",
@@ -1338,9 +1372,13 @@ function PainSection() {
         }}
       />
       <motion.div
-        whileInView={{ x: [-20, 20, -20], opacity: [0.55, 0.9, 0.55] }}
-        viewport={{ once: false, margin: "250px 0px 250px 0px" }}
-        transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
+        {...(isMobile
+          ? {}
+          : {
+              whileInView: { x: [-20, 20, -20], opacity: [0.55, 0.9, 0.55] },
+              viewport: DRIFT_VP,
+              transition: { duration: 14, repeat: Infinity, ease: "easeInOut" },
+            })}
         className="absolute top-[36%] left-[22%] w-[62vw] h-[62vw] max-w-[480px] max-h-[480px] rounded-full z-0 pointer-events-none"
         style={{
           background: "radial-gradient(circle, rgba(167,42,33,.4), transparent 70%)",
@@ -1389,7 +1427,7 @@ function PainSection() {
             className="absolute inset-0 w-full h-full"
           >
             {/* O Card Vidro Líquido */}
-            <div className={`w-full h-full rounded-[35px] px-8 py-8 flex flex-col justify-start items-center text-center
+            <div className={`no-bf-mobile w-full h-full rounded-[35px] px-8 py-8 flex flex-col justify-start items-center text-center
                             bg-gradient-to-br from-white/10 via-black/50 to-black/80
                             backdrop-blur-2xl saturate-[1.2]
                             border border-white/10 ${painPoints[currentSlide].borderTop} border-l-white/10
@@ -1510,6 +1548,7 @@ const RubyIcon = () => (
 );
 
 function SolutionSection() {
+  const isMobile = useIsMobile();
   return (
     <div className="min-h-screen bg-[#070202] relative overflow-hidden font-sans flex flex-col items-center justify-start py-20 px-6">
 
@@ -1518,9 +1557,13 @@ function SolutionSection() {
       {/* Background Liquid Glass: bolhas rubi derivando lentamente */}
       <div className="absolute inset-0 pointer-events-none">
         <motion.div
-          whileInView={{ x: [-30, 35, -30], y: [-15, 20, -15], scale: [1, 1.12, 1] }}
-          viewport={{ once: false, margin: "250px 0px 250px 0px" }}
-          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+          {...(isMobile
+            ? {}
+            : {
+                whileInView: { x: [-30, 35, -30], y: [-15, 20, -15], scale: [1, 1.12, 1] },
+                viewport: DRIFT_VP,
+                transition: { duration: 20, repeat: Infinity, ease: "easeInOut" },
+              })}
           className="absolute top-[-8%] left-[-14%] w-[88vw] h-[88vw] max-w-[680px] max-h-[680px] rounded-full mix-blend-screen"
           style={{
             background: "radial-gradient(circle at 40% 40%, rgba(167,42,33,.5), rgba(110,23,18,.26) 55%, transparent 76%)",
@@ -1528,9 +1571,13 @@ function SolutionSection() {
           }}
         />
         <motion.div
-          whileInView={{ x: [25, -30, 25], y: [15, -20, 15], scale: [1.08, 1, 1.08] }}
-          viewport={{ once: false, margin: "250px 0px 250px 0px" }}
-          transition={{ duration: 24, repeat: Infinity, ease: "easeInOut" }}
+          {...(isMobile
+            ? {}
+            : {
+                whileInView: { x: [25, -30, 25], y: [15, -20, 15], scale: [1.08, 1, 1.08] },
+                viewport: DRIFT_VP,
+                transition: { duration: 24, repeat: Infinity, ease: "easeInOut" },
+              })}
           className="absolute bottom-[-8%] right-[-14%] w-[78vw] h-[78vw] max-w-[600px] max-h-[600px] rounded-full mix-blend-screen"
           style={{
             background: "radial-gradient(circle at 55% 45%, rgba(194,26,34,.48), rgba(75,16,13,.26) 55%, transparent 78%)",
@@ -1538,9 +1585,13 @@ function SolutionSection() {
           }}
         />
         <motion.div
-          whileInView={{ x: [-15, 20, -15], opacity: [0.5, 0.85, 0.5] }}
-          viewport={{ once: false, margin: "250px 0px 250px 0px" }}
-          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+          {...(isMobile
+            ? {}
+            : {
+                whileInView: { x: [-15, 20, -15], opacity: [0.5, 0.85, 0.5] },
+                viewport: DRIFT_VP,
+                transition: { duration: 15, repeat: Infinity, ease: "easeInOut" },
+              })}
           className="absolute top-[40%] left-[24%] w-[58vw] h-[58vw] max-w-[460px] max-h-[460px] rounded-full mix-blend-screen"
           style={{
             background: "radial-gradient(circle, rgba(255,122,90,.22), transparent 70%)",
@@ -1555,9 +1606,13 @@ function SolutionSection() {
         style={{ background: "linear-gradient(180deg, #070202 0%, rgba(7,2,2,.55) 50%, transparent 100%)" }}
       />
       <motion.div
-        whileInView={{ x: ["-10%", "10%", "-10%"], opacity: [0.4, 0.8, 0.4] }}
-        viewport={{ once: false, margin: "250px 0px 250px 0px" }}
-        transition={{ duration: 13, repeat: Infinity, ease: "easeInOut" }}
+        {...(isMobile
+          ? {}
+          : {
+              whileInView: { x: ["-10%", "10%", "-10%"], opacity: [0.4, 0.8, 0.4] },
+              viewport: DRIFT_VP,
+              transition: { duration: 13, repeat: Infinity, ease: "easeInOut" },
+            })}
         className="absolute -top-6 left-[-15%] right-[-15%] h-52 z-[6] pointer-events-none"
         style={{
           background:
@@ -1819,6 +1874,11 @@ const insideStyles = `
     animation: spinCylinder 25s infinite linear;
     will-change: transform;
   }
+  /* não renderiza o verso dos cards (corta o trabalho de composição pela metade) */
+  .carousel-cylinder > div {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
 
   /* Pausa a animação quando o usuário passa o mouse para ler */
   .carousel-cylinder:hover {
@@ -1873,6 +1933,7 @@ const pages = [
 ];
 
 function InsideApostilaSection() {
+  const isMobile = useIsMobile();
   return (
     <div className="min-h-screen bg-[#070202] relative overflow-hidden font-sans flex flex-col items-center justify-center py-20 px-4">
       <style>{insideStyles}</style>
@@ -1889,9 +1950,13 @@ function InsideApostilaSection() {
         style={{ background: "linear-gradient(180deg, #070202 0%, rgba(7,2,2,.55) 50%, transparent 100%)" }}
       />
       <motion.div
-        whileInView={{ x: ["-10%", "10%", "-10%"], opacity: [0.4, 0.8, 0.4] }}
-        viewport={{ once: false, margin: "250px 0px 250px 0px" }}
-        transition={{ duration: 13, repeat: Infinity, ease: "easeInOut" }}
+        {...(isMobile
+          ? {}
+          : {
+              whileInView: { x: ["-10%", "10%", "-10%"], opacity: [0.4, 0.8, 0.4] },
+              viewport: DRIFT_VP,
+              transition: { duration: 13, repeat: Infinity, ease: "easeInOut" },
+            })}
         className="absolute -top-6 left-[-15%] right-[-15%] h-52 z-[6] pointer-events-none"
         style={{
           background:
@@ -1948,20 +2013,21 @@ function InsideApostilaSection() {
                   transform: `rotateY(${angle}deg) translateZ(${zDistance}px)`,
                 }}
               >
-                {/* Página real da apostila */}
-                <div className="relative w-[254px] h-[358px] rounded-[22px] overflow-hidden
+                {/* Página real da apostila (sem overflow-hidden: evita clipping 3D caro no iOS) */}
+                <div className="relative w-[254px] h-[358px] rounded-[22px]
                                 border border-white/15 border-t-white/30
-                                glass-card-inner transition-transform duration-300 hover:scale-105 cursor-grab active:cursor-grabbing"
+                                glass-card-inner cursor-grab active:cursor-grabbing"
                 >
                   <img
                     src={`/img/apostila-pg-${n}.webp`}
                     alt={`Página real da apostila Malinne (${n} de 7)`}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover rounded-[21px]"
                     loading="lazy"
                     decoding="async"
+                    draggable={false}
                   />
                   {/* Brilho superior do vidro */}
-                  <div className="absolute top-0 left-0 w-full h-[42%] bg-gradient-to-b from-white/10 to-transparent pointer-events-none"></div>
+                  <div className="absolute top-0 left-0 w-full h-[42%] bg-gradient-to-b from-white/10 to-transparent rounded-t-[21px] pointer-events-none"></div>
                 </div>
               </div>
             );
@@ -2289,7 +2355,7 @@ function Index() {
             <h2 className="h2 center">Quanto vale nunca mais montar apostila do zero?</h2>
             <PaymentCard />
             <p className="micro center warn" style={{ marginTop: 22 }}>
-              ⚠ Preço promocional por tempo limitado. Pode voltar ao valor normal sem aviso.
+              Preço promocional por tempo limitado. Pode voltar ao valor normal sem aviso.
             </p>
           </div>
         </section>
@@ -2419,7 +2485,7 @@ const CSS = `
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; background: var(--preto); color: var(--perola); }
-body { font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+body { font-family: 'Jost', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
 .page { position: relative; overflow-x: hidden; }
 a { color: inherit; }
 .link { color: var(--nude); text-decoration: none; border-bottom: 1px solid rgba(201,163,140,.4); }
@@ -2491,7 +2557,7 @@ a { color: inherit; }
   text-align: center;
 }
 .placeholder__id { font-family: 'Jost', sans-serif; font-size: 12px; letter-spacing: .2em; color: var(--nude); }
-.placeholder__label { font-family: 'Inter', sans-serif; font-size: 13px; color: rgba(246,241,239,.55); }
+.placeholder__label { font-family: 'Jost', sans-serif; font-size: 13px; color: rgba(246,241,239,.55); }
 .placeholder--logo { min-height: 72px; padding: 12px 20px; }
 
 /* Botão */
@@ -2635,8 +2701,9 @@ a { color: inherit; }
 }
 
 /* Entrada esfumaçada: arte se dissipa de um blur, copy sobe em cascata */
+/* LCP: nasce já visível (.35) — o Chrome conta a primeira pintura; o fade segue igual */
 @keyframes heroBgIn {
-  from { opacity: 0; transform: scale(1.06); filter: blur(18px); }
+  from { opacity: .35; transform: scale(1.05); filter: blur(10px); }
   to   { opacity: 1; transform: none; filter: blur(0); }
 }
 @keyframes heroVeilIn {
@@ -2715,6 +2782,13 @@ a { color: inherit; }
   background: linear-gradient(180deg, #070202 0%, rgba(7,2,2,.55) 55%, transparent 100%);
   pointer-events: none;
 }
+/* e a base das seções vinho também dissolve pro preto da próxima */
+.section--darker::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 120px;
+  background: linear-gradient(0deg, #070202 0%, rgba(7,2,2,.5) 55%, transparent 100%);
+  pointer-events: none; z-index: 0;
+}
+.section--darker > .container { z-index: 1; }
 .section--gradient {
   background: radial-gradient(120% 85% at 72% 12%, #A72A21 0%, #6E1712 26%, #350B08 55%, #0b0202 82%, #060101 100%);
 }
@@ -2995,7 +3069,7 @@ a { color: inherit; }
   background: linear-gradient(180deg,
     rgba(6,1,1,.2) 0%, rgba(6,1,1,0) 16%,
     rgba(6,1,1,0) 40%, rgba(6,1,1,.5) 58%,
-    rgba(6,1,1,.88) 74%, rgba(20,3,3,.96) 100%);
+    rgba(6,1,1,.88) 74%, rgba(9,2,2,.97) 100%);
 }
 @media (min-width: 900px) {
   .story__scrim {
@@ -3242,6 +3316,17 @@ a { color: inherit; }
   [class*="backdrop-blur"] {
     -webkit-backdrop-filter: blur(14px) saturate(1.35) !important;
     backdrop-filter: blur(14px) saturate(1.35) !important;
+  }
+  /* cards grandes que animam na entrada: zero backdrop no mobile (tinta translúcida no lugar) */
+  .no-bf-mobile {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background: rgba(12,4,3,.85) !important;
+  }
+  .story-card {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: linear-gradient(135deg, rgba(70,17,12,.6), rgba(34,9,7,.8) 45%, rgba(6,2,2,.9));
   }
 }
 

@@ -1,5 +1,6 @@
 @import "tailwindcss" source(none);
-@source "../src";
+/* só as rotas usam Tailwind na página; escanear src inteiro puxava 47 componentes shadcn não usados (~85KB de CSS morto) */
+@source "../src/routes";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
