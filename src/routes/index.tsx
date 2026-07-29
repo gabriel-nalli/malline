@@ -27,13 +27,10 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "" },
-      {
-        // só o que a página usa: Playfair 400/700 (+itálicos) e Jost — Inter saiu
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Jost:wght@400;500;600&display=swap",
-      },
+      // fontes self-hosted: preload paralelo, sem origem de terceiros no caminho crítico
+      { rel: "preload", as: "font", type: "font/woff2", href: "/fonts/playfair-var.woff2", crossOrigin: "" },
+      { rel: "preload", as: "font", type: "font/woff2", href: "/fonts/playfair-italic-var.woff2", crossOrigin: "" },
+      { rel: "preload", as: "font", type: "font/woff2", href: "/fonts/jost-var.woff2", crossOrigin: "" },
       {
         // LCP: antecipa a arte da hero em paralelo ao CSS
         rel: "preload",
@@ -2473,6 +2470,31 @@ const FAQ: [string, string][] = [
 ];
 
 const CSS = `
+/* Fontes self-hosted (variáveis, subset latin): zero requisição bloqueante de terceiros */
+@font-face {
+  font-family: 'Jost';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url(/fonts/jost-var.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url(/fonts/playfair-var.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url(/fonts/playfair-italic-var.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 :root {
   --rubi: #C21A22;
   --vermelho: #8E1B15;
@@ -2710,18 +2732,19 @@ a { color: inherit; }
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+/* LCP: o título nasce parcialmente visível (o Chrome conta a 1ª pintura) */
 @keyframes heroTextIn {
-  from { opacity: 0; transform: translateY(18px); filter: blur(10px); }
+  from { opacity: .25; transform: translateY(18px); filter: blur(6px); }
   to   { opacity: 1; transform: none; filter: blur(0); }
 }
 .hero__bg { animation: heroBgIn 2s cubic-bezier(.22,1,.36,1) both; }
 .hero__scrim { animation: heroVeilIn 2s ease both; }
 .hero__text > * { animation: heroTextIn 1.1s cubic-bezier(.22,1,.36,1) backwards; }
-.hero__text > *:nth-child(1) { animation-delay: .7s; }
-.hero__text > *:nth-child(2) { animation-delay: .85s; }
-.hero__text > *:nth-child(3) { animation-delay: 1s; }
-.hero__text > *:nth-child(4) { animation-delay: 1.15s; }
-.hero__text > *:nth-child(5) { animation-delay: 1.3s; }
+.hero__text > *:nth-child(1) { animation-delay: .2s; }
+.hero__text > *:nth-child(2) { animation-delay: .35s; }
+.hero__text > *:nth-child(3) { animation-delay: .5s; }
+.hero__text > *:nth-child(4) { animation-delay: .65s; }
+.hero__text > *:nth-child(5) { animation-delay: .8s; }
 @media (prefers-reduced-motion: reduce) {
   .hero__bg, .hero__scrim, .hero__text > *,
   .hero__bullets li, .hero__bullets li::before { animation: none; }
