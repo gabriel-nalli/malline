@@ -1871,11 +1871,7 @@ const insideStyles = `
     animation: spinCylinder 25s infinite linear;
     will-change: transform;
   }
-  /* não renderiza o verso dos cards (corta o trabalho de composição pela metade) */
-  .carousel-cylinder > div {
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-  }
+  /* versos visíveis: é o que dá a sensação de profundidade do cilindro */
 
   /* Pausa a animação quando o usuário passa o mouse para ler */
   .carousel-cylinder:hover {
